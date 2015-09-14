@@ -24,6 +24,7 @@ namespace TeamCityBuildChanges.ExternalApi
         IRestResponse<T> IAuthenticatedRestClient.Execute<T>(IRestRequest request)
         {
             var key = String.Format("{0}/{1}/{2}", BaseUrl, request.Resource, String.Join("/", request.Parameters));
+
             //If we are waiting for a response already...
             if (_runningRequests.ContainsKey(key))
             {
@@ -35,7 +36,11 @@ namespace TeamCityBuildChanges.ExternalApi
             //Check the cache...
             var response = _cacheClient.Get<RestResponse<T>>(key);
             if (response != null)
+            {
+                Console.WriteLine("Rest: Cached request {0}", key);
+                Console.WriteLine("Rest: Cached response - StatusCode: {0}, StatusDescription: {1}, ResponseStatus: {2}, ErrorMessage: {3}", response.StatusCode, response.StatusDescription, response.ResponseStatus, response.ErrorMessage);
                 return response;
+            }
 
             //Ok, get it remotely...
             _runningRequests.TryAdd(key,DateTime.Now);
@@ -48,7 +53,12 @@ namespace TeamCityBuildChanges.ExternalApi
 
             client.BaseUrl = builder.ToString();
             SetAuthenticationHeader(request);
+
+            Console.WriteLine("Rest: Request {0}", client.BuildUri(request));
+
             var result = client.Execute<T>(request);
+
+            Console.WriteLine("Rest: Response - StatusCode: {0}, StatusDescription: {1}, ResponseStatus: {2}, ErrorMessage: {3}", result.StatusCode, result.StatusDescription, result.ResponseStatus, result.ErrorMessage);
 
             //Add to cache, and remove from the list of running requests...
             _cacheClient.Add(key, result);

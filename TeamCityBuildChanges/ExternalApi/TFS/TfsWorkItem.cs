@@ -14,6 +14,7 @@ namespace TeamCityBuildChanges.ExternalApi.TFS
         public int? ParentId { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
+        public string LastAssignedTo { get; set; }
         public List<string> HistoryComments { get; set; }
 
         public IEnumerable<int> ChildrenIds { get; set; }

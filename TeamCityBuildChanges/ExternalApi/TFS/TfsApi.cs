@@ -76,6 +76,11 @@ namespace TeamCityBuildChanges.ExternalApi.TFS
 
                         var workItem = workItemStore.GetWorkItem(workItemId);
 
+                        var lastassignedto = 
+                            workItem.Fields[CoreField.AssignedTo].Value ?? 
+                            workItem.Revisions.Cast<Revision>().Select(r => r.Fields[CoreField.AssignedTo].Value).LastOrDefault(assignedto => assignedto != null) ?? 
+                            string.Empty;
+
                         var result = new TfsWorkItem
                             {
                                 Id = workItem.Id,
@@ -84,6 +89,7 @@ namespace TeamCityBuildChanges.ExternalApi.TFS
                                 State = workItem.State,
                                 Created = workItem.CreatedDate,
                                 Description = workItem.Description,
+                                LastAssignedTo = lastassignedto.ToString(),
                                 ParentId = GetParentId(workItem),
                                 ChildrenIds = GetChildrenIds(workItem),
                                 HistoryComments = workItem.Revisions.Cast<Revision>().Select(r => r.Fields[CoreField.History].Value.ToString()).ToList()

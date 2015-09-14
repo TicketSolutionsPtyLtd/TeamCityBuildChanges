@@ -143,7 +143,7 @@ namespace TeamCityBuildChanges.ExternalApi.TeamCity
         {
             //TODO call directly using build locator for last successful, this is not fast....
             var builds = GetBuildsByBuildType(buildType);
-            var latestBuild = builds.Where(b => b.Status == "SUCCESS").OrderByDescending(b => b.BuildTypeId).FirstOrDefault();
+            var latestBuild = builds.Where(b => b.Status == "SUCCESS").Where(b => !b.Running).OrderByDescending(b => b.BuildTypeId).FirstOrDefault();
             return latestBuild;
         }
 
@@ -214,20 +214,31 @@ namespace TeamCityBuildChanges.ExternalApi.TeamCity
             var builds = buildList ?? GetBuildsByBuildType(buildType);
             var results = new List<T>();
 
+            var orderedBuilds = builds.OrderBy(b => Convert.ToInt32(b.Id)).ToList();
+
+            Console.WriteLine("Build range: Between '{1}' and '{2}' for {0}", buildType, orderedBuilds.First().Number, orderedBuilds.Last().Number);
+
             var captureChanges = false;
-            foreach (var build in builds.OrderBy(b => Convert.ToInt32(b.Id)))
+            foreach (var build in orderedBuilds)
             {
                 if (comparitor(build, from))
                 {
+                    Console.WriteLine("Build range: Found 'from' for {0}: {1}", buildType, build.Number);
                     captureChanges = true;
                     if (excludeResultsFromLowerBound) continue;
                 }
 
                 if (captureChanges)
+                {
+                    Console.WriteLine("Build range: Capture for {0}: {1}", buildType, build.Number);
                     results.AddRange(retriever(build));
+                }
 
                 if (comparitor(build, to))
+                {
+                    Console.WriteLine("Build range: Found 'to' for {0}: {1}", buildType, build.Number);
                     break;
+                }
             }
             return results;
         }
@@ -287,7 +298,7 @@ namespace TeamCityBuildChanges.ExternalApi.TeamCity
         {
             return _cache.GetFromCacheOrFunc(buildType, key => new LazyEnumerable<Build>(100, (start, count) =>
                 {
-                    var request = GetXmlBuildRequest(string.Format("app/rest/builds/?locator=buildType:{0},start:{1},count:{2},branch:(branched:any)", buildType, start, count));
+                    var request = GetXmlBuildRequest(string.Format("app/rest/builds/?locator=buildType:{0},start:{1},count:{2},branch:(branched:any),running:any", buildType, start, count));
                     var response = _client.Execute<List<Build>>(request);
                     return response.Data;
                 }));
@@ -401,6 +412,8 @@ namespace TeamCityBuildChanges.ExternalApi.TeamCity
     {
         public string Number { get; set; }
         public string Status { get; set; }
+        public string State { get; set; }
+        public bool Running { get; set; }
         public string BuildTypeId { get; set; }
         public string BranchName { get; set; }
         public string WebUrl { get; set; }

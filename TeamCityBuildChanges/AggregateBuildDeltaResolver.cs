@@ -225,6 +225,7 @@ namespace TeamCityBuildChanges
             var runningBuild = _api.GetRunningBuildByBuildType(buildType).FirstOrDefault();
             if (runningBuild != null)
             {
+                Console.WriteLine("TO: Found running build for {0}: {1}", buildType, runningBuild.Number);
                 return runningBuild.Number;
             }
             
@@ -236,6 +237,7 @@ namespace TeamCityBuildChanges
             var latestSuccessful = _api.GetLatestSuccessfulBuildByBuildType(buildType);
             if (latestSuccessful != null)
             {
+                Console.WriteLine("FROM: Found latest successful for {0}: {1}", buildType, latestSuccessful.Number);
                 return latestSuccessful.Number;
             }
 
@@ -243,6 +245,7 @@ namespace TeamCityBuildChanges
             var runningBuild = _api.GetRunningBuildByBuildType(buildType).FirstOrDefault();
             if (runningBuild != null)
             {
+                Console.WriteLine("FROM: Found fall back to the current running build for {0}: {1}", buildType, runningBuild.Number);
                 return runningBuild.Number;
             }
 

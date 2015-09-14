@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using ManyConsole;
 
@@ -10,7 +11,10 @@ namespace TeamCityBuildChanges
         static int Main(string[] args)
         {
             ILBundle.RegisterAssemblyResolver();
-            return Run(args);
+            var result = Run(args);
+            if (Debugger.IsAttached)
+                Console.ReadKey();
+            return result;
         }
         
         private static int Run(string[] args)

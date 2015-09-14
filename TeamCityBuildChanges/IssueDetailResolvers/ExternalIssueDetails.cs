@@ -22,6 +22,7 @@ namespace TeamCityBuildChanges.IssueDetailResolvers
         public int Depth { get; set; }
         public List<string> Comments { get; set; }
         public List<ExternalIssueDetails> SubIssues { get; set; }
+        public string LastAssignedTo { get; set; }
 
         public bool ContainsSubIssue(ExternalIssueDetails issue)
         {

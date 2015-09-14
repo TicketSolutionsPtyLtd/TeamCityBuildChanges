@@ -25,7 +25,15 @@ namespace TeamCityBuildChanges.IssueDetailResolvers
             var queriedIssues = new ConcurrentBag<ExternalIssueDetails>();
             Parallel.ForEach(tfsIssues, issue => queriedIssues.Add(GetDetails(issue)));
 
-            return queriedIssues;
+            return queriedIssues
+                .GroupBy(issue => issue.Id)
+                .Select(g =>
+                {
+                    var issue = g.First();
+                    issue.SubIssues = g.SelectMany(i => i.SubIssues).ToList();
+                    return issue;
+                })
+                .ToList();
         }
 
         public IEnumerable<Issue> GetIssues(IEnumerable<ChangeDetail> changeDetails)
@@ -78,6 +86,7 @@ namespace TeamCityBuildChanges.IssueDetailResolvers
                 Status = wi.State,
                 Summary = wi.Title,
                 Description = wi.Description,
+                LastAssignedTo = wi.LastAssignedTo,
             };
 
             return eid;
