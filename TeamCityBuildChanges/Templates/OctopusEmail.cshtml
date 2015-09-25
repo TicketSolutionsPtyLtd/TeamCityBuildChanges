@@ -1,0 +1,192 @@
+@using System
+@using System.Linq
+@using System.Reflection
+@inherits RazorEngine.Templating.TemplateBase<TeamCityBuildChanges.Output.ChangeManifest>
+@{
+    Func<string, string> extractUsername = userName =>
+    {
+        
+        if (!string.IsNullOrEmpty(userName))
+        {
+            var userNameArray = userName.Split(' ');
+
+            if (userName.IndexOf("\\") > 0)
+            {
+                return userName.Split('\\')[1].ToLowerInvariant(); 
+            }
+            if (userNameArray.Length > 1)
+            {
+                return userNameArray[0].ToLowerInvariant() + userNameArray[1].Substring(0, 1).ToLowerInvariant(); 
+            }
+        }
+
+        return userName.ToLowerInvariant();
+    };
+
+    Func<string, string> GetItemColour = issueType =>
+    {
+        var featureColour = "#773B93";
+        var requirementColour = "#009CCC";
+        var taskColour = "#F2CB1D";
+        var changeRequestColour = "#F2CB1D";
+        var bugColour = "#CC293D";
+        var reviewColour = "#26BF94";
+
+
+        switch (issueType.ToLowerInvariant())
+        {
+            case "requirement":
+                return requirementColour;
+                break;
+            case "feature":
+                return featureColour;
+                break;
+            case "task":
+                return taskColour;
+                break;
+            case "code review request":
+                return reviewColour;
+                break;
+            case "bug":
+                return bugColour;
+                break;
+            case "change request":
+                return changeRequestColour;
+                break;
+            default:
+                return "#FFFFFF";
+                break;
+        }
+
+        return "#FFFFFF";
+    };
+
+}
+<style>
+    table tr td {
+        font-family: Arial;
+        font-size: 9pt;
+        padding: 0px;
+    }
+
+    table {
+        border-collapse: collapse;
+    }
+</style>
+@if (Model.IssueDetails != null && Model.IssueDetails.Any())
+{
+    <h3>Work Items</h3>
+
+    <table>
+        @foreach (var issue in Model.IssueDetails.Where(q => q.Type != "Code Review Request"))
+        {
+            <tr>
+                <td>
+                    <table style="border-collapse: separate; border-spacing: 4px 2px;">
+                        <tr>
+                            <td><img src='http://oztix.s3.amazonaws.com/staffimages/@(extractUsername(issue.LastAssignedTo)).png' width='60' height='60' /></td>
+                            <td style="width: 20px; background-color: @(GetItemColour(issue.Type))"></td>
+                            <td valign='top'>
+                                <b>@issue.Type - @issue.Summary</b>
+                                <a href='https://tfsweb.ticketsolutions.com.au/tfs/DefaultCollection/_workitems/edit/@issue.Id' target='_blank'>
+                                    @issue.Id
+                                </a>
+                                <br />@issue.Status
+                                <br />(@(issue.LastAssignedTo))
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            foreach (var child in issue.SubIssues)
+            {
+                <tr>
+                    <td>
+                        <div style="width: 1px; height: 70px; background-color: #CCCCCC; float: left; margin-left: 29px;"></div>
+                        <div style="height: 1px; background-color: #CCCCCC; width: 58px; float: left; margin-top: 30px;"></div>
+                        <table style="border-collapse: separate; border-spacing: 4px 0px;">
+                            <tr style="font-style: italic">
+                                <td><img src='http://oztix.s3.amazonaws.com/staffimages/@(extractUsername(child.LastAssignedTo)).png' width='60' height='60' /></td>
+                                <td style="width: 20px; background-color: @(GetItemColour(child.Type))"></td>
+                                <td valign='top'>
+                                    <b>@child.Type - @child.Summary</b><a href='https://tfsweb.ticketsolutions.com.au/tfs/DefaultCollection/_workitems/edit/@issue.Id'>@child.Id</a>
+                                    <br />@child.Status
+                                    <br />(@(child.LastAssignedTo))
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                foreach (var subIssue in child.SubIssues)
+                {
+                    <tr>
+                        <td>
+                            <div style="width: 1px; height: 70px; background-color: #CCCCCC; float: left; margin-left: 29px;"></div>
+                            <div style="height: 1px; background-color: #CCCCCC; width: 145px; float: left; margin-top: 30px;"></div>
+                            <table style="border-collapse: separate; border-spacing: 4px 0px;">
+                                <tr style="font-style: oblique">
+                                    <td><img src='http://oztix.s3.amazonaws.com/staffimages/@(extractUsername(subIssue.LastAssignedTo)).png' width='60' height='60' /></td>
+                                    <td style="width: 20px; background-color: @(GetItemColour(subIssue.Type))"></td>
+                                    <td valign='top'>
+                                        @subIssue.Type - @subIssue.Summary
+                                        <a href='https://tfsweb.ticketsolutions.com.au/tfs/DefaultCollection/_workitems/edit/@issue.Id'>@subIssue.Id</a> <br />
+                                        @subIssue.Status<br />
+                                        (@(subIssue.LastAssignedTo))
+                                    </td>
+                                </tr>
+                            </table>
+                    </td>
+                </tr>
+                }
+            }
+        }
+        </table>
+
+        <h3>Code Reviews</h3>
+    <table style="border-collapse: separate; border-spacing: 4px 2px;">
+        @foreach (var issue in Model.IssueDetails.Where(q => q.Type == "Code Review Request"))
+        {
+            <tr>
+                <td><img src='http://oztix.s3.amazonaws.com/staffimages/@(extractUsername(issue.LastAssignedTo)).png' width='60' height='60' /></td>
+                <td style="width: 20px; background-color: @(GetItemColour(issue.Type))"></td>
+                <td valign='top'>
+                    <b>@issue.Summary </b>
+                    <a href='https://tfsweb.ticketsolutions.com.au/tfs/DefaultCollection/_workitems/edit/@issue.Id' target='_blank'>@issue.Id</a>
+                    <br />@(issue.LastAssignedTo)
+                </td>
+            </tr>
+        }
+    </table>
+
+        <hr />
+}
+else
+{
+    <h3>No workitems</h3>
+}
+
+@if (Model.ChangeDetails != null && Model.ChangeDetails.Any())
+{
+    <h3>Change Details</h3>
+
+    <table style="border-collapse: separate; border-spacing: 4px 2px;">
+        @foreach (var change in Model.ChangeDetails)
+        {
+            <tr>
+                <td><img src='http://oztix.s3.amazonaws.com/staffimages/@(extractUsername(change.Username)).png' width='60' height='60' /></td>
+                <td style="width: 20px; background-color: @(GetItemColour("task"))"></td>
+                <td valign='top'>
+                    <b>Checked in by (@change.Username)</b>
+                    <a href='https://tfsweb.ticketsolutions.com.au/tfs/DefaultCollection/_versionControl/changeset/@change.Version' target='_blank'>Changeset @change.Version</a>
+                    <br /> @change.Comment
+                </td>
+            </tr>
+        }
+    </table>
+
+    <hr />
+}
+else
+{
+    <h3>No changesets</h3>
+}
